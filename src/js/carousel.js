@@ -1,10 +1,10 @@
 window.addEventListener('DOMContentLoaded', () => {
-    function carousel({transitionBtn}) {
-        const carousel = document.querySelector('.carousel__contents'),
-              slides = carousel.querySelectorAll('.carousel__slide'),
-              carouselInner = document.querySelector('.carousel__inner'),
-              nextBtn = document.querySelector('.next-btn'),
-              prevBtn =  document.querySelector('.prev-btn');
+    function carousel({transitionBtn, carouselSct, slidesSct, carouselInnerSct, nextBtnSct, prevBtnSct, navItemSct, navItemActiveSct, needNav}) {
+        const carousel = document.querySelector(carouselSct),
+              slides = carousel.querySelectorAll(slidesSct),
+              carouselInner = document.querySelector(carouselInnerSct),
+              nextBtn = document.querySelector(nextBtnSct),
+              prevBtn =  document.querySelector(prevBtnSct),
               cloneFrst = slides[slides.length - 1].cloneNode(true),
               cloneLast = slides[0].cloneNode(true);
         
@@ -17,14 +17,26 @@ window.addEventListener('DOMContentLoaded', () => {
 
         carousel.style.left = -activeSlidesPx + 'px'
 
-        changeSizeCarouselInner(0);
+        carouselInner.style.width = slides[0].offsetWidth + 'px';
+        carouselInner.style.height = slides[0].offsetHeight + 'px';
 
-        nextBtn.addEventListener('click', () => changeSlide(1))
-        prevBtn.addEventListener('click', () => changeSlide(-1))
+        nextBtn.addEventListener('click', () => changeSlide(1));
+        prevBtn.addEventListener('click', () => changeSlide(-1));
 
-        function changeSizeCarouselInner(num) {
-            carouselInner.style.width = slides[num].offsetWidth + 'px';
-            carouselInner.style.height = slides[num].offsetHeight + 'px';
+        if(needNav) {
+            const navItemActive = navItemActiveSct.slice(1)
+            const carouselNavItem = document.querySelectorAll(navItemSct);
+            carouselNavItem[0].classList.add(navItemActive);
+    
+            carouselNavItem.forEach((navItem, i) => navItem.addEventListener('click', () => {
+                activeSlide = i;
+                changeSlide(0);
+            }))
+    
+            function changeActiveNavItem(num) {
+                carouselNavItem.forEach(item => item.classList.remove(navItemActive))
+                carouselNavItem[num].classList.add(navItemActive);
+            }
         }
 
         function changeSlide(num) {
@@ -45,14 +57,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
             if(activeSlide < 0) {
                 carousel.style.left = 0 + 'px';
+
                 frstLastSlide(slides.length - 1);
+                if(needNav) changeActiveNavItem(slides.length - 1);
                 return;
             } else if(activeSlide > slides.length - 1) {
                 frstLastSlide(0);
+                if(needNav) changeActiveNavItem(0);
                 return;
             }
 
-            changeSizeCarouselInner(activeSlide);
+            carouselInner.style.width = slides[activeSlide].offsetWidth + 'px';
+            if(needNav) changeActiveNavItem(activeSlide);
         }
 
         function frstLastSlide(numSlide) {
@@ -66,7 +82,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 slides.forEach(slide => newLeft += slide.offsetWidth)
             }
 
-            changeSizeCarouselInner(numSlide);
+            carouselInner.style.width = slides[numSlide].offsetWidth + 'px';
 
             setTimeout(() => {
                 activeSlidesPx = newLeft;
@@ -79,6 +95,14 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     carousel({
-        transitionBtn: '1000'
+        transitionBtn: '1000',
+        carouselSct: '.carousel__contents',
+        slidesSct: '.carousel__slide',
+        carouselInnerSct: '.carousel__inner',
+        nextBtnSct: '.next-btn',
+        prevBtnSct: '.prev-btn',
+        navItemSct: '.carousel-nav__item',
+        navItemActiveSct: '.carousel-nav__item_active',
+        needNav: true,
     })
 })
