@@ -16,6 +16,7 @@
     display: flex;
     position: absolute;
     transition: 1s all;
+    cursor: grab;
 }
 
 .carousel__slide {
