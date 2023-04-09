@@ -1,5 +1,8 @@
 window.addEventListener('DOMContentLoaded', () => {
-    function carousel({transitionBtn, transitionTouches, carouselSct, slidesSct, carouselInnerSct, nextBtnSct, prevBtnSct, navItemSct, navItemActiveSct, needNav, parentCarouselSct, mouseAndTouch, mouseMove, touchMove, needClickZoomImg, classNameBackroundZoomImg, classNameImgZooming}) {
+    function carousel({transitionBtn, transitionTouches, carouselSct, slidesSct, carouselInnerSct,
+        nextBtnSct, prevBtnSct, navItemSct, navItemActiveSct, needNav, parentCarouselSct, mouseAndTouch,
+        mouseMove, touchMove, needClickZoomImg, classNameBackroundZoomImg, classNameImgZooming, needTimeoutChangeSlide,
+        didntMoveTimeout, movedTimeout}) {
         const carousel = document.querySelector(carouselSct),
               slides = carousel.querySelectorAll(slidesSct),
               carouselInner = document.querySelector(carouselInnerSct),
@@ -30,6 +33,16 @@ window.addEventListener('DOMContentLoaded', () => {
             carouselNavItem[0].classList.add(navItemActive);
     
             carouselNavItem.forEach((navItem, i) => navItem.addEventListener('click', () => {
+                if(needTimeoutChangeSlide) {
+                    if(activeSlide < i) {
+                        setNewTimeout(1);
+                    } else if(activeSlide > i) {
+                        setNewTimeout(-1);
+                    }
+
+                    needNewTimeout = false;
+                }
+
                 activeSlide = i;
                 changeSlide(0);
             }))
@@ -40,8 +53,28 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        let needNewTimeout;
+
+        let timeoutChangeSlide = setInterval(() => {
+            needNewTimeout = false;
+
+            changeSlide(1, transitionBtn);
+        }, didntMoveTimeout)
+
+        function setNewTimeout(num) {
+            clearInterval(timeoutChangeSlide);
+
+            timeoutChangeSlide = setTimeout(() => changeSlide(num, transitionBtn), movedTimeout)
+        }
+
         function changeSlide(num, transition) {
             if(isChangeSlideRunning) return;
+
+            if(needTimeoutChangeSlide && needNewTimeout) {
+                setNewTimeout(num);
+            }
+
+            needNewTimeout = true;
 
             carousel.style.transition = transition + 'ms all'
 
@@ -160,9 +193,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     let animateWidth = 0;
 
                     const animateWidthInterval = setInterval(() => {
-                        if(defaultWidth == animateWidth) clearInterval(animateWidthInterval);
+                        if(defaultWidth <= animateWidth) clearInterval(animateWidthInterval);
 
-                        animateWidth += 10;
+                        animateWidth += 15;
                         copySlide.style.width = animateWidth + 'px';
                     }, 1);
 
@@ -242,5 +275,8 @@ window.addEventListener('DOMContentLoaded', () => {
         needClickZoomImg: true,
         classNameBackroundZoomImg: '.background_carousel',
         classNameImgZooming: '.slide_zooming',
+        needTimeoutChangeSlide: true,
+        didntMoveTimeout: 7500,
+        movedTimeout: 10000
     })
 })
