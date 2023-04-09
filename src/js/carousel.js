@@ -1,5 +1,5 @@
 window.addEventListener('DOMContentLoaded', () => {
-    function carousel({transitionBtn, transitionTouches, carouselSct, slidesSct, carouselInnerSct, nextBtnSct, prevBtnSct, navItemSct, navItemActiveSct, needNav, parentCarouselSct, mouseAndTouch, mouseMove, touchMove}) {
+    function carousel({transitionBtn, transitionTouches, carouselSct, slidesSct, carouselInnerSct, nextBtnSct, prevBtnSct, navItemSct, navItemActiveSct, needNav, parentCarouselSct, mouseAndTouch, mouseMove, touchMove, needClickZoomImg, classNameBackroundZoomImg, classNameImgZooming}) {
         const carousel = document.querySelector(carouselSct),
               slides = carousel.querySelectorAll(slidesSct),
               carouselInner = document.querySelector(carouselInnerSct),
@@ -95,7 +95,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
 
         if(mouseAndTouch) {
-            let eTouchAndMouseStart, eTouchAndMouseMove, touchAndMouseSlide;
+            let eTouchAndMouseStart, eTouchAndMouseMove, touchAndMouseSlide, wasTouchOrMouseMove;
 
             slides.forEach((slide, i) => {
                 if(touchMove) {
@@ -108,8 +108,8 @@ window.addEventListener('DOMContentLoaded', () => {
         
                         carousel.style.transition = '0s all';
         
-                        slide.addEventListener('touchmove', touchMoveListener);
-                        slide.addEventListener('touchend', touchEnd);
+                        slide.addEventListener('touchmove', touchAndMouseMove);
+                        slide.addEventListener('touchend', touchAndMouseEnd);
                     })
                 }
     
@@ -131,31 +131,71 @@ window.addEventListener('DOMContentLoaded', () => {
                 carousel.style.cursor = 'grabbing';
                 carousel.style.transition = '0s all';
     
-                parentCarousel.addEventListener('mousemove', touchMoveListener);
-                parentCarousel.addEventListener('mouseup', touchEnd);
+                parentCarousel.addEventListener('mousemove', touchAndMouseMove);
+                parentCarousel.addEventListener('mouseup', touchAndMouseEnd);
             }
     
-            function touchEnd(e) {
+            function touchAndMouseEnd() {
                 if(isMouse) {
                     slides[touchAndMouseSlide].addEventListener('mousedown', mouseStart);
     
-                    parentCarousel.removeEventListener('mouseup', touchEnd);
-                    parentCarousel.removeEventListener('mousemove', touchMoveListener);
+                    parentCarousel.removeEventListener('mouseup', touchAndMouseEnd);
+                    parentCarousel.removeEventListener('mousemove', touchAndMouseMove);
     
                     carousel.style.cursor = 'grab';
     
                     isMouse = false;
-                } 
+                }
+
+                if(needClickZoomImg && !wasTouchOrMouseMove) {
+                    const background = document.createElement('div');
+                    background.classList.add(classNameBackroundZoomImg.slice(1));
+                    document.querySelector('body').append(background);
+
+                    const copySlide = slides[touchAndMouseSlide].cloneNode(true);
+                    copySlide.classList.add(classNameImgZooming.slice(1));
+                    background.append(copySlide);
+
+                    const defaultWidth = copySlide.clientWidth;
+                    let animateWidth = 0;
+
+                    const animateWidthInterval = setInterval(() => {
+                        if(defaultWidth == animateWidth) clearInterval(animateWidthInterval);
+
+                        animateWidth += 10;
+                        copySlide.style.width = animateWidth + 'px';
+                    }, 1);
+
+                    function closeZoom() {
+                        background.remove();
+                        copySlide.remove();
+                        clearInterval(animateWidthInterval);
+                    }
+
+                    background.addEventListener('click', (e) => {
+                        if(e.target === background) closeZoom()
+                    })
+
+                    window.addEventListener('keydown', (e) => {
+                        if(e.key === 'Escape') closeZoom();
+                    })
+
+                    return;
+                }
+
+                wasTouchOrMouseMove = false
     
                 if(eTouchAndMouseMove > slides[touchAndMouseSlide].offsetWidth / 2 - 100) changeSlide(-1, transitionTouches); 
                 else if (eTouchAndMouseMove < slides[touchAndMouseSlide].offsetWidth / 2 - 100 && eTouchAndMouseMove > -slides[touchAndMouseSlide].offsetWidth / 2 + 100) changeSlide(0, transitionTouches);
                 else if (eTouchAndMouseMove < -slides[touchAndMouseSlide].offsetWidth / 2 + 100) changeSlide(1, transitionTouches);
             }
     
-            function touchMoveListener(e) {
+            function touchAndMouseMove(e) {
                 if (isMouse) eTouchAndMouseMove = e.clientX - eTouchAndMouseStart;
                 else eTouchAndMouseMove = e.touches[0].clientX - eTouchAndMouseStart;
     
+                wasTouchOrMouseMove = true;
+
                 carousel.style.left = -activeSlidesPx + eTouchAndMouseMove + 'px';
     
                 if(touchAndMouseSlide === 0 && eTouchAndMouseMove >= slides[slides.length - 1].offsetWidth - 25
@@ -164,21 +204,21 @@ window.addEventListener('DOMContentLoaded', () => {
                     || slides[touchAndMouseSlide - 1] && eTouchAndMouseMove > 0 && eTouchAndMouseMove >= slides[touchAndMouseSlide - 1].offsetWidth - 25) {
     
                     if(isMouse) {
-                        parentCarousel.removeEventListener('mousemove', touchMoveListener);
-                        parentCarousel.removeEventListener('mouseup', touchEnd);
+                        parentCarousel.removeEventListener('mousemove', touchAndMouseMove);
+                        parentCarousel.removeEventListener('mouseup', touchAndMouseEnd);
                     } else {
-                        slides[touchAndMouseSlide].removeEventListener('touchmove', touchMoveListener);
-                        slides[touchAndMouseSlide].removeEventListener('touchend', touchEnd);
+                        slides[touchAndMouseSlide].removeEventListener('touchmove', touchAndMouseMove);
+                        slides[touchAndMouseSlide].removeEventListener('touchend', touchAndMouseEnd);
                     }
-                    touchEnd(slides[touchAndMouseSlide]);
+                    touchAndMouseEnd(slides[touchAndMouseSlide]);
                 }
     
                 if(isMouse && e.clientX <= (document.documentElement.clientWidth - slides[touchAndMouseSlide].offsetWidth - 10) / 2 
                     || isMouse && e.clientX >= (document.documentElement.clientWidth - slides[touchAndMouseSlide].offsetWidth) / 2 + slides[touchAndMouseSlide].offsetWidth - 10) {
-                    parentCarousel.removeEventListener('mousemove', touchMoveListener);
-                    parentCarousel.removeEventListener('mouseup', touchEnd);
+                    parentCarousel.removeEventListener('mousemove', touchAndMouseMove);
+                    parentCarousel.removeEventListener('mouseup', touchAndMouseEnd);
     
-                    touchEnd(slides[touchAndMouseSlide]);
+                    touchAndMouseEnd(slides[touchAndMouseSlide]);
                 }
             }    
         }
@@ -190,8 +230,8 @@ window.addEventListener('DOMContentLoaded', () => {
         carouselSct: '.carousel__contents',
         slidesSct: '.carousel__slide',
         carouselInnerSct: '.carousel__inner',
-        nextBtnSct: '.next-btn',
-        prevBtnSct: '.prev-btn',
+        nextBtnSct: '.carousel__next-btn',
+        prevBtnSct: '.carousel__prev-btn',
         navItemSct: '.carousel-nav__item',
         navItemActiveSct: '.carousel-nav__item_active',
         needNav: true,
@@ -199,5 +239,8 @@ window.addEventListener('DOMContentLoaded', () => {
         mouseAndTouch: true,
         mouseMove: true,
         touchMove: true,
+        needClickZoomImg: true,
+        classNameBackroundZoomImg: '.background_carousel',
+        classNameImgZooming: '.slide_zooming',
     })
 })

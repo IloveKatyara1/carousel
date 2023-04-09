@@ -43,3 +43,26 @@
     opacity: 1;
     border: solid #2d62f5 3px;
 }
+
+.background_carousel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, .5);
+    z-index: 100;
+}
+
+.slide_zooming {
+    width: 1000px;
+    z-index: 101;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.slide_zooming img {
+    width: 100%;
+}
